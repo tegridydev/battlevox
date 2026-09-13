@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { writeDistribution } from '../../scripts/build-common.cjs';
+import { inlineElements } from '../../scripts/qa/html.cjs';
 
 test('shared packaging rejects missing entrypoints and output escapes before replacing files', () => {
   const root = mkdtempSync(join(tmpdir(), 'battlevox-packaging-'));
@@ -27,7 +28,7 @@ test('shared packaging rejects missing entrypoints and output escapes before rep
   }
 });
 
-test('shared standalone packaging escapes script terminators and hashes final inline bytes', () => {
+test('shared standalone packaging escapes script terminators and hashes final inline bytes', async () => {
   const root = mkdtempSync(join(tmpdir(), 'battlevox-packaging-'));
   try {
     mkdirSync(join(root, 'src/ui'), { recursive: true });
@@ -39,10 +40,10 @@ test('shared standalone packaging escapes script terminators and hashes final in
     );
     writeDistribution(root, 'dist/standalone', 'const value = "</script>";', true);
     const html = readFileSync(join(root, 'PLAY.html'), 'utf8');
-    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+    const scripts = (await inlineElements(html)).script;
     expect(scripts).toHaveLength(1);
-    expect(scripts[0][1]).toContain('<\\/script>');
-    expect(html).toContain('sha256-' + createHash('sha256').update(scripts[0][1]).digest('base64'));
+    expect(scripts[0]).toContain('<\\/script>');
+    expect(html).toContain('sha256-' + createHash('sha256').update(scripts[0]).digest('base64'));
     expect(html).toBe(readFileSync(join(root, 'dist/standalone/index.html'), 'utf8'));
   } finally {
     rmSync(root, { recursive: true, force: true });

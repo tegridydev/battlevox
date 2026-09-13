@@ -1,4 +1,4 @@
-# Battlevox
+# Battlevox | v0.6.1
 
 Battlevox is currently an opensource single player voxel FPS. It has squad AI, a destructible city and local progression. It runs in your browser with no accounts, tracking or game downloads after you open it.
 
@@ -63,6 +63,8 @@ bun run test
 bun run test:smoke
 bun run build
 ```
+
+Artifact checks (including `test:artifacts:portable`) use the installed `parse5` development dependency. The portable game compiler itself does not require this parser.
 
 These commands check the source, run the tests and build the playable files. `bun run verify` runs the main checks together. `bun run release` also writes the release manifest, and `bun run check:release` checks that the builds can be reproduced.
 

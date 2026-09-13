@@ -1,5 +1,6 @@
 import { beforeAll, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
+import { inlineElements } from '../../scripts/qa/html.cjs';
 
 const artifactRoot = process.env.BATTLEVOX_ARTIFACT_ROOT ?? '.cache/artifact-smoke';
 beforeAll(async () => {
@@ -22,11 +23,11 @@ test('standalone contains all assets and valid CSP hashes', async () => {
   expect(html).toContain('Content-Security-Policy');
   expect(html).toContain('SQUAD ORDERS');
   expect(html).not.toMatch(/<(?:script|link)[^>]+(?:src|href)=["'](?:https?:|\.\/|\/)/);
-  const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
+  const scripts = (await inlineElements(html)).script;
   expect(scripts.length).toBeGreaterThan(0);
-  for (const match of scripts) {
-    expect(html).toContain(`sha256-${createHash('sha256').update(match[1]).digest('base64')}`);
-    expect(match[1]).not.toMatch(/\bimport\s*\(/);
+  for (const script of scripts) {
+    expect(html).toContain(`sha256-${createHash('sha256').update(script).digest('base64')}`);
+    expect(script).not.toMatch(/\bimport\s*\(/);
   }
   expect(html).not.toContain('process.env');
   expect(html).not.toContain('Bun.serve');

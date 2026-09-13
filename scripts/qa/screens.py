@@ -1,19 +1,19 @@
 """Check complete, bounded menu layouts in Chromium. Graphics use the command adapter.
 No network, native GPU or performance claims. Run test:browser:prepare first.
 """
-import json, os, re
+import json, os
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+from browser_fixture import prepare_fixture
 ROOT=Path(__file__).resolve().parents[2]
 OUT=ROOT/'.cache/qa';OUT.mkdir(parents=True,exist_ok=True)
-html=(ROOT/'index.html').read_text(); body=re.search(r'<body[^>]*>([\s\S]*)</body>',html).group(1)
-body=re.sub(r'<script[^>]*>[\s\S]*?</script>','',body)
+html=(ROOT/'index.html').read_text()
 with sync_playwright() as p:
  browser=p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH'),headless=True,args=['--no-sandbox'])
  page=browser.new_page(viewport={'width':1440,'height':900},reduced_motion='reduce'); page.set_default_timeout(120000)
  errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.set_content('<!doctype html><html><head></head><body></body></html>')
- page.evaluate('(d)=>{window.__fixtureBody=d.body;window.__fixtureCSS=d.css}',{'body':body,'css':(ROOT/'src/ui/styles.css').read_text()})
+ prepare_fixture(page, html, (ROOT/'src/ui/styles.css').read_text())
  page.add_script_tag(content=(OUT/'browser-harness.js').read_text())
  page.evaluate('''async()=>{const fixture=await __load('tests/browser.ts').browserFixture();const s=__load('tests/helpers.ts').smallSimulation();s.createSquads();
  const r=new (__load('src/rendering/renderer.ts').Renderer)(s,document.getElementById('world'),document.getElementById('hud'));

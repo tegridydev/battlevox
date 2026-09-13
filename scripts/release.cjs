@@ -17,6 +17,7 @@ run(process.execPath, ['scripts/qa/server.cjs']);
 if (process.argv.includes('--browser') || process.argv.includes('--require-gpu')) {
   const python = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
   run(process.execPath, ['scripts/qa/build-browser-harness.cjs']);
+  run(python, ['scripts/qa/browser_fixture_test.py']);
   run(python, ['scripts/qa/browser_checks.py']);
   run(python, ['scripts/qa/screens.py']);
   run(python, [

@@ -5,6 +5,7 @@ const fs = require('node:fs'),
   path = require('node:path');
 const root = path.resolve(__dirname, '../..');
 const ts = require('../compiler.cjs').loadTypeScript();
+const { javascriptString } = require('./javascript-literal.cjs');
 const walk = (d) =>
   fs
     .readdirSync(d, { withFileTypes: true })
@@ -56,7 +57,7 @@ exports.expect=function expect(actual,not=false){const c=(value,message)=>{if(no
 exports.spyOn=(object,key)=>{const original=object[key];let implementation=original;const wrapper=function(...args){wrapper.mock.calls.push(args);return implementation.apply(this,args);};wrapper.mock={calls:[]};wrapper.mockImplementation=fn=>{implementation=fn;return wrapper;};wrapper.mockRestore=()=>object[key]=original;object[key]=wrapper;return wrapper;};`;
 const modules = sources.map(
   ([id, source]) =>
-    JSON.stringify(id) +
+    javascriptString(id) +
     ':function(require,module,exports){\n' +
     ts.transpileModule(source, {
       compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },

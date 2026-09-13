@@ -6,14 +6,12 @@ Run build-browser-harness.cjs first. Screenshots show the actual menus, not a si
 """
 import json
 import os
-import re
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+from browser_fixture import prepare_fixture
 
 ROOT = Path(__file__).resolve().parents[2]
 html = (ROOT / 'index.html').read_text()
-body = re.search(r'<body[^>]*>([\s\S]*)</body>', html).group(1)
-body = re.sub(r'<script[^>]*>[\s\S]*?</script>', '', body)
 css = (ROOT / 'src/ui/styles.css').read_text()
 output = ROOT / '.cache/qa'
 output.mkdir(parents=True, exist_ok=True)
@@ -24,7 +22,7 @@ with sync_playwright() as p:
     errors = []
     page.on('pageerror', lambda error: errors.append(str(error)))
     page.set_content('<!doctype html><html><head></head><body></body></html>')
-    page.evaluate('(data)=>{window.__fixtureBody=data.body;window.__fixtureCSS=data.css}', {'body': body, 'css': css})
+    prepare_fixture(page, html, css)
     page.add_script_tag(content=(output / 'browser-harness.js').read_text())
     count = page.evaluate('__tests.length')
     results = []

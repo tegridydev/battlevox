@@ -7,10 +7,10 @@ claiming GPU correctness. --require-gpu makes missing WebGL a release-blocking f
 import argparse
 import json
 import os
-import re
 import time
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+from browser_fixture import prepare_fixture
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / '.cache/qa'
@@ -19,7 +19,6 @@ parser.add_argument('--require-gpu', action='store_true')
 args = parser.parse_args()
 html = (ROOT / 'PLAY.html').read_text()
 shell = (ROOT / 'index.html').read_text()
-body = re.search(r'<body[^>]*>([\s\S]*)</body>', shell).group(1)
 css = (ROOT / 'src/ui/styles.css').read_text()
 results = []
 with sync_playwright() as p:
@@ -31,7 +30,8 @@ with sync_playwright() as p:
         page.on('pageerror', lambda error: errors.append(str(error)))
         gpu = page.evaluate("!!document.createElement('canvas').getContext('webgl2')")
         if instrumented:
-            page.evaluate('(data)=>{window.__fixtureBody=data.body;window.__fixtureCSS=data.css;window.__realRAF=requestAnimationFrame.bind(window);window.__realCancel=cancelAnimationFrame.bind(window)}', {'body': body, 'css': css})
+            prepare_fixture(page, shell, css)
+            page.evaluate('()=>{window.__realRAF=requestAnimationFrame.bind(window);window.__realCancel=cancelAnimationFrame.bind(window)}')
             page.add_script_tag(content=(OUT / 'browser-harness.js').read_text())
             page.evaluate("async()=>{window.__bootFixture=await __load('tests/browser.ts').browserFixture();window.requestAnimationFrame=__realRAF;window.cancelAnimationFrame=__realCancel}")
         page.evaluate("""()=>{
