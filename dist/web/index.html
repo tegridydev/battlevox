@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<!--
+MIT License
+
+Copyright (c) 2026 tegridydev
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+<html lang="en-AU">
+  <head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' ; style-src 'self' ; style-src-attr 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'"><meta name="referrer" content="no-referrer">
+    <meta charset="utf-8">
+    <meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport">
+    <meta content="#090d14" name="theme-color">
+    <title>Battlevox / 0.6.1</title>
+    <meta
+      content="Battlevox. Local voxel combat with squads, sidearms, scopes and structural destruction."
+      name="description"
+    >
+    <link rel="stylesheet" href="./styles.css">
+    <script defer src="./game.js"></script>
+  </head>
+  <body>
+    <canvas aria-label="Battlevox first-person battlefield" id="world"> </canvas>
+    <canvas aria-hidden="true" id="hud"> </canvas>
+    <div id="vignette"></div>
+    <div hidden="" id="gameHUD">
+      <div id="top">
+        <div class="tickets">
+          <span class="team">
+            AEGIS
+            <b id="blueTickets"> 0 / 180s </b>
+          </span>
+          <span id="clock"> 25:00 </span>
+          <span class="enemy">
+            <b id="redTickets"> 0 / 180s </b>
+            CINDER
+          </span>
+        </div>
+        <div class="track">
+          <span id="blueTrack"> </span>
+          <span id="redTrack"> </span>
+        </div>
+        <div id="flags">
+          <span class="flag" id="flagA"> A </span>
+          <span class="flag" id="flagB"> B </span>
+          <span class="flag" id="flagC"> C </span>
+          <span class="flag" id="flagD"> D </span>
+          <span class="flag" id="centreFlag"> E </span>
+          <span class="flag" id="flagF"> F </span>
+          <span class="flag" id="flagG"> G </span>
+          <span class="flag" id="flagH"> H </span>
+          <span class="flag" id="flagI"> I </span>
+        </div>
+      </div>
+      <button class="hudButton" id="labButton">F2 / LAB</button>
+      <button class="hudButton" id="pause">ESC / MENU</button>
+      <button class="hudButton" id="mapToggle">M / MAP</button>
+      <button class="hudButton" id="scoreButton">TAB / SCORE</button>
+      <div id="objectivePanel">
+        <span class="eyebrow" id="objectiveName"> SECTOR E </span>
+        <strong id="objectiveTitle"> CAPTURE SECTOR </strong>
+        <span id="objectiveDetail"> </span>
+      </div>
+      <div id="squadHUD">
+        <span class="eyebrow" id="squadName"> YOUR SQUAD </span>
+        <div id="squadStatus"></div>
+        <div id="hudRoster" aria-label="Squad status"></div>
+        <button id="ordersButton">B / SQUAD ORDERS</button>
+      </div>
+      <div aria-live="polite" id="feed"></div>
+      <div aria-live="off" id="xpFeed"></div>
+      <div id="bottom">
+        <div id="vitals">
+          <div id="health">100 HEALTH</div>
+          <div id="healthbar"></div>
+          <div id="stance">COMBAT READY</div>
+          <div id="stats"></div>
+        </div>
+        <div id="weapon">
+          <div aria-label="Weapon slots" id="weaponSlots">
+            <button data-weapon-slot="0">1</button>
+            <button data-weapon-slot="1">2</button>
+            <button data-weapon-slot="2">3</button>
+          </div>
+          <div id="gunname"></div>
+          <div id="weaponStatus"></div>
+          <div id="ammo"></div>
+          <div id="ammoReserve"></div>
+          <progress
+            aria-label="Reload progress"
+            hidden=""
+            id="reloadProgress"
+            max="1"
+            value="0"
+          ></progress>
+          <div id="reloadLabel"></div>
+          <div id="inventory"></div>
+          <div class="kitReadout">
+            <button id="kitAction" aria-label="Use class equipment">Q</button>
+            <div><strong id="kitLabel"></strong><span id="kitState"></span></div>
+          </div>
+          <div id="supplyState"></div>
+        </div>
+      </div>
+      <div id="hudPanels">
+        <button id="hudMapToggle" aria-expanded="false">MINIMAP</button
+        ><button id="hudSquadToggle" aria-expanded="false" aria-controls="squadHUD">SQUAD</button>
+      </div>
+      <div hidden="" id="hint"></div>
+      <div id="performance"></div>
+      <div hidden="" id="fieldTip">1 primary · 2 sidearm · 3 equipment · 4 smoke</div>
+      <div hidden="" id="practiceBadge">PRACTICE</div>
+    </div>
+    <div id="overlay">
+      <main class="frontShell">
+        <header class="frontHeader">
+          <button aria-label="Battlevox home" class="brand" data-menu="home">
+            BV
+            <span>
+              BATTLEVOX
+              <br>
+              0.6.1
+            </span>
+          </button>
+          <nav aria-label="Main navigation" class="frontNav">
+            <button data-menu="home">PLAY</button>
+            <button data-menu="loadouts">LOADOUT</button>
+            <button data-menu="barracks">BARRACKS</button>
+            <button data-menu="challenges">TASKS</button>
+            <button data-menu="options">SETTINGS</button>
+            <button data-menu="controls">HELP</button>
+          </nav>
+          <button class="identity" data-menu="barracks">
+            <b id="headerRank"> 01 </b>
+            <span id="headerName"> OPERATIVE </span>
+          </button>
+        </header>
+        <div class="frontContent">
+          <section class="hubPage homePage" data-page="home">
+            <div class="pageTop">
+              <span> PLAY / CONQUEST </span>
+              <span id="scenarioMeta"> Sector control </span>
+            </div>
+            <div class="modeGrid">
+              <article class="modeCard featured">
+                <div aria-hidden="true" class="cityArt"></div>
+                <div class="modeBody">
+                  <span class="eyebrow"> BATTLEVOX </span>
+                  <h1 id="scenarioName">METROPOLIS</h1>
+                  <p>Capture and hold a majority of sectors.</p>
+                  <div class="homeActions">
+                    <button class="primary" id="deploy">NEW BATTLE →</button>
+                    <button hidden="" id="homeResume">RESUME BATTLE →</button>
+                    <span id="noMatch"> No active battle </span>
+                  </div>
+                </div>
+              </article>
+              <article class="setupCard">
+                <h2>Battle setup</h2>
+                <div class="setupFields">
+                  <label>
+                    Scenario
+                    <select id="scenario">
+                      <option value="city">Metropolis</option>
+                      <option selected="" value="frontline">Civic Frontline</option>
+                    </select>
+                  </label>
+                  <label>
+                    Soldiers per team
+                    <select id="battleSize">
+                      <option value="30">30</option>
+                      <option selected="" value="60">60</option>
+                      <option value="120">120</option>
+                      <option value="250">250</option>
+                      <option value="500">500</option>
+                    </select>
+                  </label>
+                  <label>
+                    City seed
+                    <input id="mapSeed" max="4294967295" min="1" type="number" value="872426">
+                  </label>
+                  <label>
+                    Round limit
+                    <select id="duration">
+                      <option selected="" value="10">10 minutes</option>
+                      <option value="25">25 minutes</option>
+                      <option value="45">45 minutes</option>
+                    </select>
+                  </label>
+                </div>
+                <small> Applies to the next battle. </small>
+              </article>
+            </div>
+            <div class="progressGrid">
+              <article class="progressCard">
+                <div class="cardHeading">
+                  <span> CAREER </span>
+                  <button data-menu="barracks">VIEW →</button>
+                </div>
+                <div id="careerSummary"></div>
+              </article>
+              <article class="progressCard">
+                <div class="cardHeading">
+                  <span> ASSIGNMENTS </span>
+                  <button data-menu="challenges">VIEW →</button>
+                </div>
+                <div id="homeAssignments"></div>
+              </article>
+              <article class="progressCard">
+                <div class="cardHeading">
+                  <span> WEAPON MASTERY </span>
+                  <button data-menu="loadouts">VIEW →</button>
+                </div>
+                <div id="homeMastery"></div>
+              </article>
+            </div>
+          </section>
+          <section class="hubPage" data-page="loadouts" hidden="">
+            <div class="pageHeading">
+              <h1>Loadouts</h1>
+              <span class="pageNote"> Class and sidearm apply on deployment. </span>
+            </div>
+            <p id="carriedLoadout" class="statusLine">Carried equipment appears during a battle.</p>
+            <div class="loadoutSelectors">
+              <label>
+                Class
+                <select id="arsenalClass">
+                  <option value="assault">Assault</option>
+                  <option value="medic">Medic</option>
+                  <option value="support">Support</option>
+                  <option value="engineer">Engineer</option>
+                  <option value="recon">Recon</option>
+                </select>
+              </label>
+              <label>
+                Sidearm
+                <select id="arsenalSecondary">
+                  <option value="4">P-12 · Service pistol</option>
+                  <option value="5">R-6 · Revolver</option>
+                  <option value="6">MP-18 · Machine pistol</option>
+                </select>
+              </label>
+            </div>
+            <div class="arsenalBrowser">
+              <label>
+                Inspect equipment
+                <select id="arsenalItem"></select>
+              </label>
+              <div class="arsenalGrid" id="arsenal"></div>
+            </div>
+          </section>
+          <section class="hubPage" data-page="barracks" hidden="">
+            <div class="pageHeading">
+              <h1>Barracks</h1>
+              <span class="pageNote" id="profile"> </span>
+            </div>
+            <div aria-label="Career" class="screenTabs" role="tablist">
+              <button
+                aria-controls="panel-career-overview"
+                data-tab="career:overview"
+                id="tab-career-overview"
+                role="tab"
+                type="button"
+              >
+                Overview
+              </button>
+              <button
+                aria-controls="panel-career-ribbons"
+                data-tab="career:ribbons"
+                id="tab-career-ribbons"
+                role="tab"
+                type="button"
+              >
+                Ribbons
+              </button>
+              <button
+                aria-controls="panel-career-history"
+                data-tab="career:history"
+                id="tab-career-history"
+                role="tab"
+                type="button"
+              >
+                History
+              </button>
+              <button
+                aria-controls="panel-career-save"
+                data-tab="career:save"
+                id="tab-career-save"
+                role="tab"
+                type="button"
+              >
+                Profile
+              </button>
+            </div>
+            <div
+              aria-labelledby="tab-career-overview"
+              class="screenPanel"
+              data-panel="career:overview"
+              id="panel-career-overview"
+              role="tabpanel"
+            >
+              <div class="statGrid" id="careerStats"></div>
+              <div aria-label="stats pages" class="pager" id="statsPager">
+                <button aria-label="Previous stats" data-page-step="stats:-1">← Previous</button>
+                <output aria-live="polite"> </output>
+                <button aria-label="Next stats" data-page-step="stats:1">Next →</button>
+              </div>
+            </div>
+            <div
+              aria-labelledby="tab-career-ribbons"
+              class="screenPanel"
+              data-panel="career:ribbons"
+              id="panel-career-ribbons"
+              role="tabpanel"
+            >
+              <div class="medalGrid" id="medals"></div>
+              <div aria-label="medals pages" class="pager" id="medalsPager">
+                <button aria-label="Previous medals" data-page-step="medals:-1">← Previous</button>
+                <output aria-live="polite"> </output>
+                <button aria-label="Next medals" data-page-step="medals:1">Next →</button>
+              </div>
+            </div>
+            <div
+              aria-labelledby="tab-career-history"
+              class="screenPanel"
+              data-panel="career:history"
+              id="panel-career-history"
+              role="tabpanel"
+            >
+              <div class="history" id="matchHistory"></div>
+              <div aria-label="history pages" class="pager" id="historyPager">
+                <button aria-label="Previous history" data-page-step="history:-1">
+                  ← Previous
+                </button>
+                <output aria-live="polite"> </output>
+                <button aria-label="Next history" data-page-step="history:1">Next →</button>
+              </div>
+            </div>
+            <div
+              aria-labelledby="tab-career-save"
+              class="screenPanel"
+              data-panel="career:save"
+              id="panel-career-save"
+              role="tabpanel"
+            >
+              <div class="profileSave">
+                <form class="callsign" id="callsignForm">
+                  <label>
+                    Callsign
+                    <input autocomplete="off" id="callsign" maxlength="24">
+                  </label>
+                  <button type="submit">SAVE NAME</button>
+                </form>
+                <p class="statusLine" id="saveStatus" role="status"></p>
+                <div class="profileTools">
+                  <h2>Saved career</h2>
+                  <p>Stored in this browser. Export a copy before clearing site data.</p>
+                  <button id="exportProfile">EXPORT PROFILE</button>
+                  <label>
+                    Restore from
+                    <select id="checkpointChoice">
+                      <option value="latest">Saved profile</option>
+                    </select>
+                  </label>
+                  <button id="recoverProfile">LOAD SELECTED</button>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section class="hubPage" data-page="challenges" hidden="">
+            <div class="pageHeading">
+              <h1>Assignments</h1>
+              <span class="pageNote"> Rewards are claimed automatically. </span>
+            </div>
+            <div class="assignmentGrid" id="assignments"></div>
+            <div aria-label="assignments pages" class="pager" id="assignmentsPager">
+              <button aria-label="Previous assignments" data-page-step="assignments:-1">
+                ← Previous
+              </button>
+              <output aria-live="polite"> </output>
+              <button aria-label="Next assignments" data-page-step="assignments:1">Next →</button>
+            </div>
+          </section>
+          <section class="hubPage narrowPage" data-page="pause" hidden="">
+            <div class="pageHeading">
+              <h1>Paused</h1>
+            </div>
+            <div class="simplePanel">
+              <button class="primary big" id="resume">RESUME</button>
+              <button class="big" id="redeploy">REDEPLOY</button>
+              <small> Redeploying costs one reserve. </small>
+              <button class="big" id="quit">MAIN MENU</button>
+            </div>
+          </section>
+          <section class="hubPage" data-page="options" hidden="">
+            <div class="pageHeading">
+              <h1>Settings</h1>
+            </div>
+            <div aria-label="Settings" class="screenTabs" role="tablist">
+              <button
+                aria-controls="panel-settings-display"
+                data-tab="settings:display"
+                id="tab-settings-display"
+                role="tab"
+                type="button"
+              >
+                Display
+              </button>
+              <button
+                aria-controls="panel-settings-controls"
+                data-tab="settings:controls"
+                id="tab-settings-controls"
+                role="tab"
+                type="button"
+              >
+                Controls
+              </button>
+              <button
+                aria-controls="panel-settings-audio"
+                data-tab="settings:audio"
+                id="tab-settings-audio"
+                role="tab"
+                type="button"
+              >
+                Audio
+              </button>
+            </div>
+            <div
+              aria-labelledby="tab-settings-display"
+              class="screenPanel"
+              data-panel="settings:display"
+              id="panel-settings-display"
+              role="tabpanel"
+            >
+              <div class="settings">
+                <label>
+                  Lighting
+                  <select id="lighting">
+                    <option value="daylight">Clear daylight</option>
+                    <option value="afternoon">Late afternoon</option>
+                    <option value="overcast">Soft overcast</option>
+                  </select>
+                </label>
+                <label>
+                  HUD scale
+                  <select id="hudScale">
+                    <option value="1">100%</option>
+                    <option value="1.15">115%</option>
+                    <option value="1.3">130%</option>
+                  </select>
+                </label>
+                <label>
+                  Resolution
+                  <select id="quality">
+                    <option value="0.65">Performance</option>
+                    <option selected="" value="0.85">Balanced</option>
+                    <option value="1.1">High</option>
+                  </select>
+                </label>
+                <label>
+                  View distance
+                  <select id="distance">
+                    <option value="220">220 m</option>
+                    <option value="340">340 m</option>
+                    <option selected="" value="480">480 m</option>
+                  </select>
+                </label>
+                <label>
+                  Scene brightness
+                  <input id="brightness" max="1.35" min="0.75" step="0.05" type="range" value="1">
+                  <output for="brightness" id="brightnessValue"> </output>
+                </label>
+                <label>
+                  Field of view
+                  <input id="fov" max="105" min="65" type="range" value="105">
+                  <output for="fov" id="fovValue"> </output>
+                </label>
+                <label class="check">
+                  <input checked="" id="textures" type="checkbox">
+                  Material textures
+                </label>
+                <label class="check">
+                  <input id="shadows" type="checkbox">
+                  Sun shadows
+                </label>
+                <label class="check">
+                  <input checked="" id="adaptive" type="checkbox">
+                  Adaptive resolution
+                </label>
+              </div>
+              <button id="fullscreen">TOGGLE FULLSCREEN</button>
+            </div>
+            <div
+              aria-labelledby="tab-settings-controls"
+              class="screenPanel"
+              data-panel="settings:controls"
+              id="panel-settings-controls"
+              role="tabpanel"
+            >
+              <div class="settings">
+                <label>
+                  Sensitivity
+                  <input id="sensitivity" max="2.5" min="0.3" step="0.1" type="range">
+                  <output for="sensitivity" id="sensitivityValue"> </output>
+                </label>
+                <label>
+                  Aim sensitivity
+                  <input id="adsSensitivity" max="1" min="0.2" step="0.05" type="range">
+                  <output for="adsSensitivity" id="adsSensitivityValue"> </output>
+                </label>
+                <label>
+                  Aim mode
+                  <select id="aimMode">
+                    <option value="toggle">Toggle / right click</option>
+                    <option value="hold">Hold / right button</option>
+                  </select>
+                </label>
+                <label class="check">
+                  <input id="motion" type="checkbox">
+                  Camera motion
+                </label>
+                <label class="check">
+                  <input id="touchMode" type="checkbox">
+                  Touch controls
+                </label>
+              </div>
+            </div>
+            <div
+              aria-labelledby="tab-settings-audio"
+              class="screenPanel"
+              data-panel="settings:audio"
+              id="panel-settings-audio"
+              role="tabpanel"
+            >
+              <div class="settings">
+                <label>
+                  Volume
+                  <input id="volume" max="1" min="0" step="0.05" type="range">
+                  <output for="volume" id="volumeValue"> </output>
+                </label>
+              </div>
+            </div>
+          </section>
+          <section class="hubPage" data-page="controls" hidden="">
+            <div class="pageHeading">
+              <h1>Controls</h1>
+            </div>
+            <div aria-label="Manual" class="screenTabs" role="tablist">
+              <button
+                aria-controls="panel-manual-movement"
+                data-tab="manual:movement"
+                id="tab-manual-movement"
+                role="tab"
+                type="button"
+              >
+                Movement
+              </button>
+              <button
+                aria-controls="panel-manual-combat"
+                data-tab="manual:combat"
+                id="tab-manual-combat"
+                role="tab"
+                type="button"
+              >
+                Combat
+              </button>
+              <button
+                aria-controls="panel-manual-classes"
+                data-tab="manual:classes"
+                id="tab-manual-classes"
+                role="tab"
+                type="button"
+              >
+                Classes
+              </button>
+              <button
+                aria-controls="panel-manual-world"
+                data-tab="manual:world"
+                id="tab-manual-world"
+                role="tab"
+                type="button"
+              >
+                World
+              </button>
+            </div>
+            <div
+              aria-labelledby="tab-manual-movement"
+              class="screenPanel"
+              data-panel="manual:movement"
+              id="panel-manual-movement"
+              role="tabpanel"
+            >
+              <div class="keys">
+                <div>
+                  <b> W A S D </b>
+                  <span> Move </span>
+                </div>
+                <div>
+                  <b> Mouse </b>
+                  <span> Look </span>
+                </div>
+                <div>
+                  <b> Shift </b>
+                  <span> Sprint </span>
+                </div>
+                <div>
+                  <b> Space </b>
+                  <span> Jump / mantle </span>
+                </div>
+                <div>
+                  <b> C </b>
+                  <span> Crouch </span>
+                </div>
+                <div>
+                  <b> E </b>
+                  <span> Use vehicle / lift </span>
+                </div>
+                <div>
+                  <b> Shift + E </b>
+                  <span> Lift down </span>
+                </div>
+                <div>
+                  <b> Escape </b>
+                  <span> Pause / close </span>
+                </div>
+              </div>
+            </div>
+            <div
+              aria-labelledby="tab-manual-combat"
+              class="screenPanel"
+              data-panel="manual:combat"
+              id="panel-manual-combat"
+              role="tabpanel"
+            >
+              <div class="keys">
+                <div>
+                  <b> Left mouse </b>
+                  <span> Fire </span>
+                </div>
+                <div>
+                  <b> Right mouse </b>
+                  <span> Aim </span>
+                </div>
+                <div>
+                  <b> 1 / 2 / 3 </b>
+                  <span> Primary / sidearm / equipment </span>
+                </div>
+                <div>
+                  <b> Q / wheel </b>
+                  <span> Cycle weapon </span>
+                </div>
+                <div>
+                  <b> X / aim + wheel </b>
+                  <span> Change scope zoom </span>
+                </div>
+                <div>
+                  <b> R </b>
+                  <span> Reload </span>
+                </div>
+                <div>
+                  <b> G / 4 </b>
+                  <span> Frag / smoke </span>
+                </div>
+                <div>
+                  <b> Z / H </b>
+                  <span> Spot / self aid </span>
+                </div>
+              </div>
+            </div>
+            <div
+              aria-labelledby="tab-manual-classes"
+              class="screenPanel"
+              data-panel="manual:classes"
+              id="panel-manual-classes"
+              role="tabpanel"
+            >
+              <div class="keys">
+                <div>
+                  <b> Assault · F </b>
+                  <span> Field dressing </span>
+                </div>
+                <div>
+                  <b> Medic · F </b>
+                  <span> Heal, revive or place a medical bag </span>
+                </div>
+                <div>
+                  <b> Support · F </b>
+                  <span> Place ammo or resupply an ally </span>
+                </div>
+                <div>
+                  <b> Engineer · 3 / V </b>
+                  <span> Launcher / repair or build cover </span>
+                </div>
+                <div>
+                  <b> Recon · F </b>
+                  <span> Spot visible enemies </span>
+                </div>
+                <div>
+                  <b> B / M / Tab </b>
+                  <span> Orders / map / scoreboard </span>
+                </div>
+              </div>
+              <p class="panelNote">
+                Smoke blocks sight, not bullets. Bags have limited supplies. Sidearm changes take
+                effect when you deploy.
+              </p>
+            </div>
+            <div
+              aria-labelledby="tab-manual-world"
+              class="screenPanel"
+              data-panel="manual:world"
+              id="panel-manual-world"
+              role="tabpanel"
+            >
+              <div class="manualText">
+                <h2>Conquest</h2>
+                <p>
+                  Hold more sectors than the enemy to build control. Victory requires the control
+                  goal, a lead when time expires, or exhausting enemy reserves.
+                </p>
+                <h2>Squads</h2>
+                <p>
+                  The squad leader can issue follow, attack and hold orders. Medics can revive
+                  downed allies before they redeploy.
+                </p>
+                <h2>Destruction</h2>
+                <p>
+                  Damage columns and beams to weaken a structure. Detached sections become physical
+                  rubble and can block routes.
+                </p>
+                <h2>F2 · Field lab</h2>
+                <p>
+                  Change practice options or inspect simulation diagnostics. Practice modifiers
+                  disable further career rewards for that round.
+                </p>
+              </div>
+            </div>
+          </section>
+          <section class="hubPage narrowPage" data-page="credits" hidden="">
+            <div class="pageHeading">
+              <h1>About</h1>
+            </div>
+            <div class="manualText">
+              <h2>Battlevox 0.6.1</h2>
+              <p>A single player voxel combat game with squad AI and structural destruction.</p>
+              <p>
+                Runs locally using WebGL 2. No accounts, purchases, tracking or external game
+                services.
+              </p>
+              <h2>Your save</h2>
+              <p>
+                Career progress belongs to this browser and origin. Opening the standalone file and
+                using the local server may use separate saves. Export a copy from Barracks before
+                switching.
+              </p>
+            </div>
+          </section>
+          <section class="hubPage" data-page="lab" hidden="">
+            <div class="pageHeading">
+              <h1>Field lab</h1>
+              <button id="labClose">RETURN</button>
+            </div>
+            <div aria-label="Lab" class="screenTabs" role="tablist">
+              <button
+                aria-controls="panel-lab-setup"
+                data-tab="lab:setup"
+                id="tab-lab-setup"
+                role="tab"
+                type="button"
+              >
+                Setup
+              </button>
+              <button
+                aria-controls="panel-lab-practice"
+                data-tab="lab:practice"
+                id="tab-lab-practice"
+                role="tab"
+                type="button"
+              >
+                Practice
+              </button>
+              <button
+                aria-controls="panel-lab-engine"
+                data-tab="lab:engine"
+                id="tab-lab-engine"
+                role="tab"
+                type="button"
+              >
+                Engine
+              </button>
+              <button
+                aria-controls="panel-lab-squads"
+                data-tab="lab:squads"
+                id="tab-lab-squads"
+                role="tab"
+                type="button"
+              >
+                Squads
+              </button>
+            </div>
+            <div
+              aria-labelledby="tab-lab-setup"
+              class="screenPanel"
+              data-panel="lab:setup"
+              id="panel-lab-setup"
+              role="tabpanel"
+            >
+              <div class="labCard">
+                <div class="settings">
+                  <label>
+                    Scenario
+                    <select id="labScenario">
+                      <option value="city">Metropolis</option>
+                      <option selected="" value="frontline">Civic Frontline</option>
+                    </select>
+                  </label>
+                  <label>
+                    Soldiers per team
+                    <select id="labPopulation">
+                      <option value="30">30</option>
+                      <option selected="" value="60">60</option>
+                      <option value="120">120</option>
+                      <option value="250">250</option>
+                      <option value="500">500</option>
+                    </select>
+                  </label>
+                </div>
+                <p>Applies to a new battle.</p>
+                <button class="primary" id="labRestart">NEW BATTLE</button>
+              </div>
+            </div>
+            <div
+              aria-labelledby="tab-lab-practice"
+              class="screenPanel"
+              data-panel="lab:practice"
+              id="panel-lab-practice"
+              role="tabpanel"
+            >
+              <div class="labCard">
+                <label class="check">
+                  <input id="labInvulnerable" type="checkbox">
+                  Invulnerable player
+                </label>
+                <label class="check">
+                  <input id="labSupplies" type="checkbox">
+                  Unlimited ammunition reserves
+                </label>
+                <p>
+                  Magazines still reload. Enabling either option disables further career rewards for
+                  the round.
+                </p>
+                <p aria-live="polite" id="labActionStatus" role="status"></p>
+                <p class="statusLine" id="practiceNotice"></p>
+                <button id="labReposition">REPOSITION AT BASE</button>
+              </div>
+            </div>
+            <div
+              aria-labelledby="tab-lab-engine"
+              class="screenPanel"
+              data-panel="lab:engine"
+              id="panel-lab-engine"
+              role="tabpanel"
+            >
+              <div class="labCard">
+                <pre id="labTelemetry"></pre>
+                <button id="labCheck">RUN CHECKS</button>
+                <pre class="checkResults" id="labCheckResult" role="status"></pre>
+              </div>
+            </div>
+            <div
+              aria-labelledby="tab-lab-squads"
+              class="screenPanel"
+              data-panel="lab:squads"
+              id="panel-lab-squads"
+              role="tabpanel"
+            >
+              <div class="labCard">
+                <label>
+                  Report
+                  <select id="labReport">
+                    <option value="activity">Activity</option>
+                    <option value="squad">Your squad</option>
+                  </select>
+                </label>
+                <pre id="labAI"></pre>
+              </div>
+            </div>
+          </section>
+          <section class="hubPage resultPage" data-page="results" hidden="">
+            <div class="pageHeading">
+              <h1><span id="roundTitle"> </span></h1>
+              <span class="pageNote" id="roundStats"> </span>
+            </div>
+            <div class="debrief" id="roundXp"></div>
+            <div class="medalGrid resultMedals" id="roundMedals"></div>
+            <div class="resultActions">
+              <button class="primary" id="restart">PLAY AGAIN</button>
+              <button id="resultHome">MAIN MENU</button>
+            </div>
+          </section>
+          <section class="hubPage narrowPage" data-page="confirm" hidden="">
+            <div class="pageHeading">
+              <h1>Start a new battle?</h1>
+            </div>
+            <div class="simplePanel">
+              <p>
+                The current round will end without a completion bonus. XP already earned is
+                retained.
+              </p>
+              <button class="primary big" id="newConfirmed">NEW BATTLE</button>
+              <button class="big" id="confirmBack">KEEP CURRENT BATTLE</button>
+            </div>
+          </section>
+        </div>
+        <footer class="frontFooter">
+          <span> BATTLEVOX / 0.6.1 </span>
+          <div class="footerActions">
+            <button data-menu="lab">F2 / FIELD LAB</button>
+            <button data-menu="credits">ABOUT</button>
+          </div>
+          <span id="profileState" role="status"> Local profile </span>
+        </footer>
+      </main>
+    </div>
+    <div hidden="" id="tactical">
+      <section aria-labelledby="tacticalTitle" class="tacticalCard">
+        <header class="tacticalHeader">
+          <div>
+            <span class="eyebrow"> AEGIS / OPERATIONS </span>
+            <h1 id="tacticalTitle">DEPLOYMENT</h1>
+          </div>
+          <span id="tacticalClock"> </span>
+          <button id="tacticalClose">ESC / CLOSE</button>
+        </header>
+        <div class="tacticalGrid">
+          <aside>
+            <div aria-label="Tactical" class="screenTabs" role="tablist">
+              <button
+                aria-controls="panel-tactical-roster"
+                data-tab="tactical:roster"
+                id="tab-tactical-roster"
+                role="tab"
+                type="button"
+              >
+                Squad
+              </button>
+              <button
+                aria-controls="panel-tactical-orders"
+                data-tab="tactical:orders"
+                id="tab-tactical-orders"
+                role="tab"
+                type="button"
+              >
+                Orders
+              </button>
+            </div>
+            <div
+              aria-labelledby="tab-tactical-roster"
+              class="screenPanel"
+              data-panel="tactical:roster"
+              id="panel-tactical-roster"
+              role="tabpanel"
+            >
+              <div class="squadChoices">
+                <label>
+                  Squad
+                  <select id="squadSelect"></select>
+                </label>
+                <label id="roleLabel">
+                  Your role
+                  <select id="roleSelect">
+                    <option value="leader">Squad leader</option>
+                    <option value="member">Squad member</option>
+                  </select>
+                </label>
+              </div>
+              <div id="roster"></div>
+              <div class="rosterPager">
+                <button aria-label="Previous squad members" id="rosterPrev">←</button>
+                <output id="rosterPage"> </output>
+                <button aria-label="Next squad members" id="rosterNext">→</button>
+              </div>
+            </div>
+            <div
+              aria-labelledby="tab-tactical-orders"
+              class="screenPanel"
+              data-panel="tactical:orders"
+              id="panel-tactical-orders"
+              role="tabpanel"
+            >
+              <div id="orderControls">
+                <span class="eyebrow"> SQUAD ORDERS </span>
+                <button data-order="follow">1 / FOLLOW &amp; REGROUP</button>
+                <button data-order="objective">2 / ATTACK SELECTED SECTOR</button>
+                <button data-order="hold">3 / HOLD MY POSITION</button>
+              </div>
+              <p id="orderStatus" role="status"></p>
+            </div>
+          </aside>
+          <div class="mapPanel">
+            <canvas
+              aria-label="Tactical city map. Use spawn choices below for keyboard deployment."
+              id="tacticalMap"
+            > </canvas>
+            <div class="mapTools">
+              <button aria-label="Zoom out" id="zoomOut">−</button>
+              <button id="zoomReset">RESET VIEW</button>
+              <button aria-label="Zoom in" id="zoomIn">+</button>
+            </div>
+            <p class="mapLegend">
+              <span> ● AEGIS </span>
+              <span class="squadColour"> ● YOUR SQUAD </span>
+              <span class="enemy"> ● VISIBLE ENEMY </span>
+              <span> ◇ SPAWN </span>
+            </p>
+          </div>
+        </div>
+        <footer class="deploymentBar" id="deploymentBar">
+          <label>
+            Deploy at
+            <select id="spawnSelect">
+              <option value="base:1">West Base / main gate</option>
+              <option value="base:0">West Base / north gate</option>
+              <option value="base:2">West Base / south gate</option>
+              <option value="leader">Squad leader</option>
+            </select>
+          </label>
+          <label>
+            Class kit
+            <select id="loadout">
+              <option value="assault">Assault · AR-30</option>
+              <option value="medic">Medic</option>
+              <option value="support">Support · MG-60</option>
+              <option value="engineer">Engineer · AR-30 + AT-1</option>
+              <option value="recon">Recon · DMR-8</option>
+            </select>
+          </label>
+          <label id="secondaryLabel">
+            Sidearm
+            <select id="secondary">
+              <option value="4">P-12 · Service pistol</option>
+              <option value="5">R-6 · Revolver</option>
+              <option value="6">MP-18 · Machine pistol</option>
+            </select>
+          </label>
+          <div>
+            <p id="kitDescription"></p>
+            <p id="spawnStatus" role="status"></p>
+          </div>
+          <button class="primary" id="deployNow">DEPLOY →</button>
+        </footer>
+        <button class="primary big" id="returnToGame">RETURN TO GAME →</button>
+      </section>
+    </div>
+    <div hidden="" id="scoreboard">
+      <section aria-label="Scoreboard" aria-modal="true" class="scoreCard" role="dialog">
+        <h2>Scoreboard</h2>
+        <div id="scoreSummary" class="scoreSummary" role="status"></div>
+        <div id="scoreContent"></div>
+        <button id="closeScores">ESC / RETURN</button>
+      </section>
+    </div>
+    <div id="touch">
+      <div aria-label="Movement joystick" class="pad" id="movePad">
+        <div id="stick"></div>
+      </div>
+      <div class="touchbuttons">
+        <button id="aim">ADS</button>
+        <button id="jump">JUMP</button>
+        <button id="fire">FIRE</button>
+        <button id="reload">LOAD</button>
+        <button id="grenade">FRAG</button>
+        <button id="swap">GUN</button>
+        <button id="enter">USE</button>
+        <button aria-label="Lift down" id="liftDown">LIFT ↓</button>
+        <button id="crouch">DUCK</button>
+        <button id="heal">HEAL</button>
+        <button id="buildCover">BUILD</button>
+        <button id="touchOrders">ORDERS</button>
+        <button id="touchMap">MAP</button>
+        <button aria-label="Use class ability" id="touchClass">CLASS</button>
+        <button aria-label="Spot or ping" id="touchPing">PING</button>
+        <button id="touchSmoke">SMOKE</button>
+        <button id="touchZoom">ZOOM</button>
+      </div>
+    </div>
+    <div id="loading">
+      <section class="loadBox">
+        <span class="eyebrow"> BATTLEVOX </span>
+        <h2>Loading city</h2>
+        <p class="foot">Preparing terrain and navigation.</p>
+        <div id="loadLabel" role="status">INITIALISING ENGINE</div>
+        <progress
+          aria-label="City preparation progress"
+          id="loadProgress"
+          max="100"
+          value="0"
+        ></progress>
+      </section>
+    </div>
+    <div class="modalShade" hidden="" id="actionDialog">
+      <section
+        aria-describedby="dialogMessage"
+        aria-labelledby="dialogTitle"
+        aria-modal="true"
+        class="dialogCard"
+        role="alertdialog"
+      >
+        <span class="eyebrow"> CONFIRM ACTION </span>
+        <h2 id="dialogTitle"></h2>
+        <p id="dialogMessage"></p>
+        <div class="dialogActions">
+          <button id="dialogCancel">CANCEL</button>
+          <button class="primary" id="dialogConfirm">CONTINUE</button>
+        </div>
+      </section>
+    </div>
+    <div hidden="" id="error" role="alert"></div>
+  </body>
+</html>

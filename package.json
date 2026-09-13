@@ -1,0 +1,49 @@
+{
+  "name": "battlevox",
+  "version": "0.6.1",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.3.9",
+  "engines": {
+    "bun": ">=1.3.9",
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "bun dev.ts",
+    "test": "bun test tests/unit tests/integration",
+    "test:smoke": "bun test tests/smoke",
+    "typecheck": "tsc --noEmit",
+    "check": "bun run typecheck && bun run check:style && bun run check:format",
+    "format": "biome check --write .",
+    "build": "node scripts/build-portable.cjs",
+    "build:standalone": "node scripts/build-portable.cjs",
+    "verify": "node scripts/release.cjs --native",
+    "start": "node scripts/serve.cjs",
+    "check:source": "node scripts/build-portable.cjs --check",
+    "check:style": "biome lint .",
+    "build:portable": "node scripts/build-portable.cjs",
+    "test:portable": "node --expose-gc scripts/qa/test-portable.cjs",
+    "test:browser:prepare": "node scripts/qa/build-browser-harness.cjs",
+    "test:artifacts:portable": "node scripts/qa/artifacts.cjs",
+    "audit": "bun audit",
+    "test:server:portable": "node scripts/qa/server.cjs",
+    "build:native": "bun scripts/build.ts && bun scripts/build.ts --standalone",
+    "release": "node scripts/release.cjs",
+    "test:browser": "node scripts/qa/build-browser-harness.cjs && python3 scripts/qa/browser_checks.py",
+    "test:boot": "node scripts/qa/build-browser-harness.cjs && python3 scripts/qa/emitted_boot.py",
+    "test:gpu": "node scripts/qa/build-browser-harness.cjs && python3 scripts/qa/emitted_boot.py --require-gpu",
+    "benchmark": "node --expose-gc scripts/qa/benchmark.cjs",
+    "test:layout": "node scripts/qa/build-browser-harness.cjs && python3 scripts/qa/screens.py",
+    "test:shaders:egl": "python3 scripts/qa/shaders_egl.py",
+    "check:format": "biome format .",
+    "check:release": "node scripts/qa/reproducible.cjs",
+    "package:public": "python3 scripts/package-public.py"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/bun": "1.3.10",
+    "@biomejs/biome": "2.4.6",
+    "happy-dom": "20.11.6"
+  },
+  "license": "MIT"
+}
