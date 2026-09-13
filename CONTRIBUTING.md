@@ -32,6 +32,8 @@ bun run package:public
 
 This creates a clean source folder and ZIP under `.cache/public-release`. It copies only the manifest's files and replaces the previous extracted folder, so local leftovers are not carried forward. ZIP entries use fixed dates and permissions instead of local file metadata.
 
+Make edits in the main project folder before building a release. The README animation lives at `docs/battlevox.gif` and is included in the public package. Files edited or added inside `.cache/public-release` are temporary and will be replaced. Add any new public assets to the list in `scripts/release-files.cjs` before running the release commands.
+
 Keep `.gitignore` and `.gitattributes` when uploading. The source repository includes the tests and build tools so other people can work on it.
 
 ## Testing

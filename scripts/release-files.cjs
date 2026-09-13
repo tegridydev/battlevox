@@ -18,6 +18,7 @@ const rootFiles = [
   'index.html',
   'PLAY.html',
   'docs/architecture.md',
+  'docs/battlevox.gif',
   'docs/known-limitations.md',
   'docs/playtest.md',
   'docs/validation.md',

@@ -1,6 +1,8 @@
-# Battlevox | v0.6.1
+# Battlevox
 
 Battlevox is currently an opensource single player voxel FPS. It has squad AI, a destructible city and local progression. It runs in your browser with no accounts, tracking or game downloads after you open it.
+
+![Battlevox gameplay](docs/battlevox.gif)
 
 ## Play
 
